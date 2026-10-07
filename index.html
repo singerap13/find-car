@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex">
+  <title>Find Car</title>
+  <style>
+    body { font-family: system-ui, sans-serif; text-align: center; padding: 32px 16px;
+           background: #fff; color: #222; }
+    a.btn { display: block; margin: 16px auto; padding: 22px; max-width: 420px;
+            background: #1a73e8; color: #fff; font-size: 22px; border-radius: 12px;
+            text-decoration: none; }
+    a.btn.alt { background: #34a853; }
+    p { color: #555; }
+    [hidden] { display: none !important; }
+  </style>
+</head>
+<body>
+  <h2>🚗 Find Car</h2>
+  <p id="msg">Loading the car's location…</p>
+  <a id="pin"  class="btn"     hidden>Open in Google Maps</a>
+  <a id="walk" class="btn alt" hidden>Walk there</a>
+
+  <script>
+    const API = 'https://script.google.com/macros/s/AKfycbxuTt7pG0oVbOWAejG4VtjiY87LZgT-QIAxVcJR7oyHj3nrmSHnMEOekeOU16WaSeA/exec';
+
+    const msg = document.getElementById('msg');
+    const k = new URLSearchParams(location.search).get('k');
+
+    if (!k) {
+      msg.textContent = 'This link is missing its key.';
+    } else {
+      fetch(API + '?format=json&token=' + encodeURIComponent(k))
+        .then(r => r.json())
+        .then(d => {
+          if (!d.lat || !d.lng) { msg.textContent = 'No location saved yet.'; return; }
+
+          const pinUrl  = 'https://www.google.com/maps/search/?api=1&query=' + d.lat + ',' + d.lng;
+          const walkUrl = 'https://www.google.com/maps/dir/?api=1&destination=' + d.lat + ',' + d.lng + '&travelmode=walking';
+
+          const t = new Date(d.ts);
+          const mins = Math.round((Date.now() - t) / 60000);
+          const ago = mins < 60 ? mins + ' min ago'
+                    : mins < 1440 ? Math.round(mins / 60) + ' hr ago'
+                    : Math.round(mins / 1440) + ' days ago';
+          msg.textContent =
+            t.toLocaleString([], { weekday: 'short', hour: 'numeric', minute: '2-digit' }) +
+            ' (' + ago + ')' + (d.by ? ' · saved by ' + d.by : '');
+
+          const pin = document.getElementById('pin'), walk = document.getElementById('walk');
+          pin.href = pinUrl; walk.href = walkUrl;
+          pin.hidden = walk.hidden = false;
+
+          location.replace(pinUrl);
+        })
+        .catch(() => { msg.textContent = "Couldn't load the location. Check the link or your signal."; });
+    }
+  </script>
+</body>
+</html>
